@@ -1,0 +1,48 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity" >
+    
+    <TextView
+        android:id="@+id/mouse_control"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="20sp"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="@string/mouse_control" />
+    <Button
+        android:id="@+id/mouse_calibrate_center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mouse_calibrate_center" />
+    <LinearLayout 
+        android:id="@+id/mouse_buttons_container"
+        android:orientation="horizontal"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent">
+        <Button
+        	android:id="@+id/mouse_left_button"
+        	android:layout_width="0sp"
+        	android:layout_height="match_parent"
+        	android:layout_weight="0.5"
+        	android:text="" />
+        <Button
+            android:id="@+id/mouse_right_button"
+            android:layout_width="0sp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.5"
+            android:text="" />
+    </LinearLayout>
+    
+    
+    <!-- <SeekBar 
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:max="@string/volume_control_max" /> -->
+
+</LinearLayout>
