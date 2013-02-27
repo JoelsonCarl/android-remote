@@ -1,12 +1,8 @@
 package com.joelsoncarl.androidremote;
 
-import java.io.IOException;
-import java.net.Socket;
-
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentTransaction;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -81,7 +77,7 @@ public class MainActivity extends Activity {
      * @param view
      */
     public void rfbConnect(View view) {
-        new RfbConnectTask().execute();
+        m_rfbClient.openConnection();
     }
 
     /**
@@ -92,31 +88,6 @@ public class MainActivity extends Activity {
         m_rfbClient.closeConnection();
     }
 
-    /**
-     * Establishes the socket connection to the RFB Server
-     */
-    private class RfbConnectTask extends AsyncTask<Void, String, Socket> {
-        protected Socket doInBackground(Void... voids) {
-            Socket rfbServerSock = null;
-            try {
-                publishProgress(getResources().getString(R.string.connection_progress));
-                rfbServerSock = new Socket("192.168.13.2", 5901);
-            }
-            catch (IOException e) {
-                m_rfbClient.m_connectMsg.setText("RFB Socket Connection Error");
-            }
-            return rfbServerSock;
-        }
-
-        protected void onProgressUpdate(String... progress) {
-            m_rfbClient.m_connectMsg.setText(progress[0]);
-        }
-
-        protected void onPostExecute(Socket sock) {
-            m_rfbClient.connectDone(sock);
-        }
-    }
-    
     /**
      * The OnTouchListener for the mouse buttons
      */

@@ -3,11 +3,10 @@
     android:id="@+id/connect_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MainActivity" >
+    android:orientation="vertical" >
     
     <TextView
-        android:id="@+id/connection_settings"
+        android:id="@+id/connection_settings_heading"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
@@ -23,26 +22,65 @@
         android:gravity="center_horizontal"
         android:text="" />
     
-    <Button
-        android:id="@+id/connect_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+	    android:id="@+id/connect_disconnect_buttons_layout"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:orientation="horizontal" >
+	    <Button
+	        android:id="@+id/connect_button"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:text="@string/connect_button"
+	        android:onClick="rfbConnect" />
+	    <Button
+	        android:id="@+id/disconnect_button"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:text="@string/disconnect_button"
+	        android:onClick="rfbDisconnect" />
+	</LinearLayout>
+	
+    <LinearLayout
+        android:id="@+id/IP_address_section"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="@string/connect_button"
-        android:onClick="rfbConnect" />
-    
-    <Button
-        android:id="@+id/disconnect_button"
-        android:layout_width="wrap_content"
+        android:orientation="horizontal" >
+	    <TextView
+	        android:id="@+id/IP_address_label"
+	        android:layout_width="0dip"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:text="@string/ip_address_label" />
+	    <EditText
+	        android:id="@+id/IP_address_entry"
+	        android:layout_width="0dip"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:digits="0123456789."
+	        android:inputType="phone" />
+	</LinearLayout>
+	
+    <LinearLayout
+        android:id="@+id/port_number_section"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="@string/disconnect_button"
-        android:onClick="rfbDisconnect" />
-    
-    <!-- <SeekBar 
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:max="@string/volume_control_max" /> -->
+        android:orientation="horizontal" >
+        <TextView
+            android:id="@+id/port_number_label"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/port_number_label" />
+        <EditText
+            android:id="@+id/port_number_entry"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:digits="0123456789"
+            android:inputType="phone" />
+    </LinearLayout>
 
 </LinearLayout>

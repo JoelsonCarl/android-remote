@@ -3,9 +3,13 @@ package com.joelsoncarl.androidremote;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.os.AsyncTask;
+import android.widget.EditText;
 import android.widget.TextView;
 
 /**
@@ -19,7 +23,14 @@ public class RfbClient {
     /** A reference to main activity from whence we came */
     public MainActivity m_mainActivity;
 
+    /** Available states and a variable to hold the current state */
+    private enum State {
+        DISCONNECTED, CONNECTED, CONNECTING
+    }
+    private State m_state;
     /** Socket connection to the RFB Server */
+    /** The IP Address and Port Number of the RFB Server */
+    private String m_ip, m_port;
     private Socket m_rfbServerSock;
     /** Input Stream for reading data from the RFB Server */
     private DataInputStream m_rfbInput;
@@ -71,7 +82,10 @@ public class RfbClient {
     RfbClient(MainActivity ma) {
         m_mainActivity = ma;
         m_connectMsg = (TextView) m_mainActivity.findViewById(R.id.connection_message);
+        m_state = State.DISCONNECTED;
         m_rfbServerSock = null;
+        m_ip = null;
+        m_port = null;
         m_protocolVersion = 0;
         m_data = new byte [64];
         m_dataResult = false;
@@ -81,13 +95,87 @@ public class RfbClient {
     }
 
     /**
+     * Opens the socket connection
+     */
+    public void openConnection() {
+        // If currently disconnected, initiate connecting
+        if (m_state == State.DISCONNECTED) {
+            m_state = State.CONNECTING;
+            String ip, port;
+            EditText view = (EditText) m_mainActivity.findViewById(R.id.IP_address_entry);
+            ip = view.getText().toString();
+            view = (EditText) m_mainActivity.findViewById(R.id.port_number_entry);
+            port = view.getText().toString();
+            if (parseIpAndPort(ip, port)) {
+                m_ip = ip;
+                m_port = port;
+                new RfbConnectTask().execute();
+            }
+            else {
+                m_connectMsg.setText(m_mainActivity.getResources().getString(R.string.ip_port_parse_error));
+                m_state = State.DISCONNECTED;
+            }
+        }
+    }
+    
+    /**
+     * Parses the provided IP Address and Port Number and returns
+     * true if they are ok, false otherwise
+     */
+    private boolean parseIpAndPort(String ip, String port) {
+        boolean ipParsed = false;
+        boolean portParsed = false;
+        
+        // Parse the IP Address
+        Pattern pattern = Pattern.compile("\\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b");
+        Matcher matcher = pattern.matcher(ip);
+        if (matcher.find()) {
+            ipParsed = true;
+        }
+        
+        // Parse the Port Number
+        pattern = Pattern.compile("\\b([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-5][0-9][0-9][0-9][0-9]|6[0-4][0-9][0-9][0-9]|65[0-4][0-9][0-9]|655[0-2][0-9]|6553[0-5])\\b");
+        matcher = pattern.matcher(port);
+        if (matcher.find()) {
+            portParsed = true;
+        }
+
+        return ipParsed && portParsed;
+    }
+    
+    /**
+     * Closes the input/output streams and the socket
+     */
+    public void closeConnection() {
+        if (m_state == State.CONNECTED) { 
+            try {
+                if (m_rfbInput != null) {
+                    m_rfbInput.close();
+                }
+                if (m_rfbOutput != null) {
+                    m_rfbOutput.close();
+                }
+                if (m_rfbServerSock != null) {
+                    m_rfbServerSock.close();
+                }
+                m_connectMsg.setText(m_mainActivity.getResources().getString(R.string.disconnected));
+            } catch (IOException e) {
+                m_connectMsg.setText("Error closing connection");
+            }
+            m_state = State.DISCONNECTED;
+        }
+    }
+    
+    /**
      * Called from the AsyncTask that established the socket connection
      * @param sock The Socket connection to the RFB Server
      */
     public void connectDone(Socket sock) {
         m_rfbServerSock = sock;
-        m_connectMsg.setText(m_mainActivity.getResources().getString(R.string.connected));
+        // If socket is not null, we're connected, so open I/O streams
         if (m_rfbServerSock != null) {
+            m_state = State.CONNECTED;
+            m_connectMsg.setText(m_mainActivity.getResources().getString(R.string.connected));
             try {
                 m_rfbInput = new DataInputStream(m_rfbServerSock.getInputStream());
                 m_rfbOutput = new DataOutputStream(m_rfbServerSock.getOutputStream());
@@ -95,27 +183,46 @@ public class RfbClient {
             }
             catch (IOException e) {
                 m_connectMsg.setText("Error in input or output stream");
+                closeConnection();
             }
+        }
+        // If socket is null, there was a connection error; we are still disconnected
+        else {
+            m_connectMsg.setText("RFB Socket Connection Error");
+            m_state = State.DISCONNECTED;
         }
     }
 
     /**
-     * Closes the input/output streams and the socket
+     * Establishes the socket connection to the RFB Server
      */
-    public void closeConnection() {
-        try {
-            if (m_rfbInput != null) {
-                m_rfbInput.close();
+    private class RfbConnectTask extends AsyncTask<Void, String, Socket> {
+        protected Socket doInBackground(Void... voids) {
+            Socket rfbServerSock = null;
+            // Try connecting the socket
+            try {
+                publishProgress(m_mainActivity.getResources().getString(R.string.connection_progress));
+                rfbServerSock = new Socket();
+                rfbServerSock.connect(new InetSocketAddress(m_ip, Integer.valueOf(m_port)), 5000);
             }
-            if (m_rfbOutput != null) {
-                m_rfbOutput.close();
+            catch (IOException e) {
+                // If socket fails, try closing it just in case
+                try {
+                    rfbServerSock.close();
+                } catch (IOException e2) {
+                    // Do nothing
+                }
+                rfbServerSock = null;
             }
-            if (m_rfbServerSock != null) {
-                m_rfbServerSock.close();
-            }
-            this.m_connectMsg.setText(m_mainActivity.getResources().getString(R.string.disconnected));
-        } catch (IOException e) {
-            m_connectMsg.setText("Error closing connection");
+            return rfbServerSock;
+        }
+
+        protected void onProgressUpdate(String... progress) {
+            m_connectMsg.setText(progress[0]);
+        }
+
+        protected void onPostExecute(Socket sock) {
+            connectDone(sock);
         }
     }
     
